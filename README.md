@@ -14,7 +14,6 @@ Technical Architecture Overview
 ​4. Persistence Layer (Database)
 ​Technology: SQL Server.
 ​Role: The "Source of Truth." It stores data in relational tables with primary keys (ID) to ensure Data Integrity.
-​🛠️ Senior Engineering Highlights (What makes it "Pro")
 ​🔹 Dependency Management
 ​Instead of hard-coding values, the system uses a Connection String management approach. This follows the DRY (Don't Repeat Yourself) principle, allowing the entire application to point to a new server by changing just one line in a configuration file.
 ​🔹 UI/UX Optimization
