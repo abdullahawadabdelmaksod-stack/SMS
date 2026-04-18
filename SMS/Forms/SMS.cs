@@ -91,7 +91,7 @@ namespace SMS
         {
             if (MessageBox.Show("Are you sure?", "Delete", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                // delete code åäÇ
+                // delete code Ã¥Ã¤Ã‡
             }
             try
             {
@@ -124,7 +124,7 @@ namespace SMS
             }
         }
 
-        // CLICK ROW (ÇÎÊíÇÑí ÈÓ ãåã)
+        // CLICK ROW (Ã‡ÃŽÃŠÃ­Ã‡Ã‘Ã­ ÃˆÃ“ Ã£Ã¥Ã£)
         private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
@@ -141,6 +141,6 @@ namespace SMS
         
     }
 }
-
        
+
 
