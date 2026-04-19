@@ -9,6 +9,7 @@ Technical Architecture Overview
 ​2. Logic & Service Layer (BLL)
 ​Technology: C# Methods & Business Rules.
 ​Role: Acts as a bridge. It contains the logic for student enrollment rules, data formatting (e.g., ensuring the Age is a positive integer), and coordinating between the UI and the Repository.
+
 ​3. Data Access Layer (DAL / Repository)
 ​Technology: ADO.NET / SQL Client.
 ​Pattern: Repository Pattern.
