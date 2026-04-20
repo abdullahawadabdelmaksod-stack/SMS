@@ -1,6 +1,7 @@
 using MaterialSkin;
 using MaterialSkin.Controls;
 using SMS.Data;
+using SMS.Models;
 
 namespace SMS
 {
@@ -82,13 +83,20 @@ namespace SMS
                 return;
             }
 
+            // Seed default admin if DB is empty
+            if (!_context.Users.Any())
+            {
+                _context.Users.Add(new User { Username = "admin", Password = "123" });
+                _context.SaveChanges();
+            }
+
             var user = _context.Users
                 .FirstOrDefault(u => u.Username == username && u.Password == password);
 
             if (user != null)
             {
-                SMS mainForm = new SMS();
-                mainForm.Show();
+                var dashboard = new Dashboard();
+                dashboard.Show();
                 this.Hide();
             }
             else

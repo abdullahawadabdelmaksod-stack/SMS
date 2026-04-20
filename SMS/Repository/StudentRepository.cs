@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using SMS.Data;
 using SMS.Models;
@@ -22,7 +22,7 @@ namespace SMS.Repository
 
         public void Update(Student student)
         {
-            var existing = _context.Students.Find(student.Id);
+            var existing = _context.Students.Find(student.StudentId);
 
             if (existing != null)
             {
