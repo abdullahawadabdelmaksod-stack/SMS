@@ -6,10 +6,10 @@ namespace SMS.Data
     public class AppDbContext : DbContext
     {
         // ── Tables ───────────────────────────────────────────────────────────
-        public DbSet<Student>    Students    { get; set; }
-        public DbSet<User>       Users       { get; set; }
-        public DbSet<Course>     Courses     { get; set; }
-        public DbSet<Grade>      Grades      { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<Grade> Grades { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
 
         // ── Connection ───────────────────────────────────────────────────────
@@ -27,11 +27,11 @@ namespace SMS.Data
             {
                 e.ToTable("Students");
                 e.HasKey(s => s.StudentId);
-                e.Property(s => s.Name)      .IsRequired().HasMaxLength(150);
+                e.Property(s => s.Name).IsRequired().HasMaxLength(150);
                 e.Property(s => s.Department).IsRequired().HasMaxLength(5);
-                e.Property(s => s.Age)       .IsRequired();
-                e.Property(s => s.Phone)     .HasMaxLength(20);
-                e.Property(s => s.Level)     .HasMaxLength(50);
+                e.Property(s => s.Age).IsRequired();
+                e.Property(s => s.Phone).HasMaxLength(20);
+                e.Property(s => s.Level).HasMaxLength(50);
             });
 
             // ── Course ───────────────────────────────────────────────────────
@@ -40,10 +40,10 @@ namespace SMS.Data
                 e.ToTable("Courses");
                 e.HasKey(c => c.CourseId);
                 e.Property(c => c.CourseId).ValueGeneratedNever();
-                e.Property(c => c.Name)       .IsRequired().HasMaxLength(200);
-                e.Property(c => c.Code)       .IsRequired().HasMaxLength(20);
+                e.Property(c => c.Name).IsRequired().HasMaxLength(200);
+                e.Property(c => c.Code).IsRequired().HasMaxLength(20);
                 e.Property(c => c.Description).HasMaxLength(500);
-                e.Property(c => c.Credits)    .IsRequired();
+                e.Property(c => c.Credits).IsRequired();
                 e.HasIndex(c => c.Code).IsUnique();   // course codes must be unique
             });
 
@@ -54,9 +54,9 @@ namespace SMS.Data
             {
                 e.ToTable("Grades");
                 e.HasKey(g => g.GradeId);
-                e.Property(g => g.Score)      .IsRequired();
+                e.Property(g => g.Score).IsRequired();
                 e.Property(g => g.LetterGrade).HasMaxLength(2);
-                e.Property(g => g.Semester)   .HasMaxLength(20);
+                e.Property(g => g.Semester).HasMaxLength(20);
 
                 e.HasOne(g => g.Student)
                  .WithMany(s => s.Grades)
@@ -76,9 +76,9 @@ namespace SMS.Data
             {
                 e.ToTable("Attendances");
                 e.HasKey(a => a.AttendanceId);
-                e.Property(a => a.Date)    .IsRequired();
+                e.Property(a => a.Date).IsRequired();
                 e.Property(a => a.IsPresent).IsRequired();
-                e.Property(a => a.Notes)   .HasMaxLength(300);
+                e.Property(a => a.Notes).HasMaxLength(300);
 
                 e.HasOne(a => a.Student)
                  .WithMany(s => s.Attendances)

@@ -34,7 +34,7 @@ namespace SMS.Repository
 
                 _context.SaveChanges();
             }
-           
+
         }
 
         public void Delete(int id)

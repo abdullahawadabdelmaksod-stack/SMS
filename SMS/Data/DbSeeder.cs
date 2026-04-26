@@ -1,6 +1,5 @@
 using SMS.Models;
-using System.Security.Cryptography;
-using Microsoft.EntityFrameworkCore;
+
 
 namespace SMS.Data
 {
@@ -31,12 +30,12 @@ namespace SMS.Data
                 new Course { CourseId = 11, Name = "Artificial Intelligence", Code = "AI301", Credits = 3, Description = "ML fundamentals" },
                 new Course { CourseId = 12, Name = "Cybersecurity", Code = "SEC201", Credits = 3, Description = "Network security" }
             };
-          
-            
+
+
             var firstNames = new[] { "Ahmed", "Mahmoud", "Mohamed", "Hassan", "Kareem", "Fatima", "Aisha", "Nour", "Yasmin", "Heba", "Khaled", "Omar" };
-            var lastNames  = new[] { "Ali", "Ibrahim", "Tariq", "Mansour", "El-Sayed", "Farouk", "Mustafa", "Salem" };
-            var depts      = new[] { "Computer Science", "Information Systems", "Software Engineering", "AI" };
-            var levels     = new[] { "Freshman", "Sophomore", "Junior", "Senior" };
+            var lastNames = new[] { "Ali", "Ibrahim", "Tariq", "Mansour", "El-Sayed", "Farouk", "Mustafa", "Salem" };
+            var depts = new[] { "Computer Science", "Information Systems", "Software Engineering", "AI" };
+            var levels = new[] { "Freshman", "Sophomore", "Junior", "Senior" };
 
             var rand = new Random();
             var students = new List<Student>();
@@ -44,10 +43,10 @@ namespace SMS.Data
             for (int i = 1; i <= 100; i++)
             {
                 string first = firstNames[rand.Next(firstNames.Length)];
-                string last  = lastNames[rand.Next(lastNames.Length)];
-                string dept  = depts[rand.Next(depts.Length)];
-                string lvl   = levels[rand.Next(levels.Length)];
-                
+                string last = lastNames[rand.Next(lastNames.Length)];
+                string dept = depts[rand.Next(depts.Length)];
+                string lvl = levels[rand.Next(levels.Length)];
+
                 var student = new Student
                 {
                     Name = $"{first} {last}",
@@ -57,7 +56,7 @@ namespace SMS.Data
                     BirthDate = DateOnly.FromDateTime(DateTime.Today.AddYears(-rand.Next(18, 24)).AddDays(-rand.Next(0, 365))),
                     Level = lvl
                 };
-                
+
                 students.Add(student);
             }
             db.Students.AddRange(students);
@@ -76,7 +75,7 @@ namespace SMS.Data
                     var course = courseList[rand.Next(courseList.Count)];
                     var score = rand.Next(50, 100);
                     var letterGrade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
-                    
+
                     db.Grades.Add(new Grade
                     {
                         StudentId = student.StudentId,

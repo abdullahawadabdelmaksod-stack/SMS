@@ -9,17 +9,17 @@ namespace SMS.Models
     public class Grade : AuditableEntity
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int    GradeId   { get; set; }
-        public double Score     { get; set; }          // 0.0 – 100.0
+        public int GradeId { get; set; }
+        public double Score { get; set; }          // 0.0 – 100.0
         public string LetterGrade { get; set; } = string.Empty;  // A, B, C, D, F
-        public string Semester  { get; set; } = string.Empty;    // e.g. "2024-S1"
+        public string Semester { get; set; } = string.Empty;    // e.g. "2024-S1"
 
         // ── FK → Student ─────────────────────────────────────────────────────
-        public int     StudentId { get; set; }
-        public Student Student   { get; set; } = null!;
+        public int StudentId { get; set; }
+        public Student Student { get; set; } = null!;
 
         // ── FK → Course ──────────────────────────────────────────────────────
-        public int    CourseId { get; set; }
-        public Course Course   { get; set; } = null!;
+        public int CourseId { get; set; }
+        public Course Course { get; set; } = null!;
     }
 }

@@ -59,7 +59,7 @@ namespace SMS
         /// <summary>Applies heading/subtitle fonts — called after MaterialSkin to prevent overrides.</summary>
         private void ApplyFonts()
         {
-            lblTitle.Font    = new System.Drawing.Font("Segoe UI", 17F, System.Drawing.FontStyle.Bold);
+            lblTitle.Font = new System.Drawing.Font("Segoe UI", 17F, System.Drawing.FontStyle.Bold);
             lblSubtitle.Font = new System.Drawing.Font("Segoe UI", 14F);
             lblSubtitle.Height = 44;
         }
@@ -100,6 +100,6 @@ namespace SMS
             }
         }
 
-       
+
     }
 }
