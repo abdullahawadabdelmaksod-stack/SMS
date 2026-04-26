@@ -28,8 +28,10 @@ namespace SMS.Data
                 e.ToTable("Students");
                 e.HasKey(s => s.StudentId);
                 e.Property(s => s.Name)      .IsRequired().HasMaxLength(150);
-                e.Property(s => s.Department).IsRequired().HasMaxLength(100);
+                e.Property(s => s.Department).IsRequired().HasMaxLength(5);
                 e.Property(s => s.Age)       .IsRequired();
+                e.Property(s => s.Phone)     .HasMaxLength(20);
+                e.Property(s => s.Level)     .HasMaxLength(50);
             });
 
             // ── Course ───────────────────────────────────────────────────────
@@ -52,7 +54,6 @@ namespace SMS.Data
             {
                 e.ToTable("Grades");
                 e.HasKey(g => g.GradeId);
-                e.Property(g => g.GradeId).ValueGeneratedNever();
                 e.Property(g => g.Score)      .IsRequired();
                 e.Property(g => g.LetterGrade).HasMaxLength(2);
                 e.Property(g => g.Semester)   .HasMaxLength(20);
@@ -92,6 +93,33 @@ namespace SMS.Data
                 // Composite index: one record per student per course per day
                 e.HasIndex(a => new { a.StudentId, a.CourseId, a.Date }).IsUnique();
             });
+
+            // ── Auditable Defaults ───────────────────────────────────────────
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(AuditableEntity).IsAssignableFrom(entity.ClrType))
+                {
+                    modelBuilder.Entity(entity.ClrType).Property("CreatedAt").HasDefaultValueSql("GETUTCDATE()");
+                    modelBuilder.Entity(entity.ClrType).Property("UpdatedAt").HasDefaultValueSql("GETUTCDATE()");
+                }
+            }
+        }
+
+        // ── Audit Auto-stamping ──────────────────────────────────────────────
+        public override int SaveChanges()
+        {
+            var entries = ChangeTracker.Entries<AuditableEntity>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+            foreach (var entry in entries)
+            {
+                entry.Entity.UpdatedAt = DateTime.UtcNow;
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.CreatedAt = DateTime.UtcNow;
+                }
+            }
+            return base.SaveChanges();
         }
     }
 }

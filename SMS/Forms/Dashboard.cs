@@ -67,10 +67,16 @@ namespace SMS
             BuildSidebar();
             BuildContentShell();
             BuildDashboardPage();
-            BuildSubPage(_pgStud, _dgvStud);
-            BuildSubPage(_pgCrs,  _dgvCrs);
-            BuildSubPage(_pgGrd,  _dgvGrd);
-            BuildSubPage(_pgAtt,  _dgvAtt);
+            // Create isolated BindingSources to shield DGV from background thread resets
+            var bsStud = new BindingSource(); _dgvStud.DataSource = bsStud;
+            var bsCrs  = new BindingSource(); _dgvCrs.DataSource  = bsCrs;
+            var bsGrd  = new BindingSource(); _dgvGrd.DataSource  = bsGrd;
+            var bsAtt  = new BindingSource(); _dgvAtt.DataSource  = bsAtt;
+
+            BuildSubPage(_pgStud, _dgvStud, bsStud, 1);
+            BuildSubPage(_pgCrs,  _dgvCrs,  bsCrs,  2);
+            BuildSubPage(_pgGrd,  _dgvGrd,  bsGrd,  3);
+            BuildSubPage(_pgAtt,  _dgvAtt,  bsAtt,  4);
 
             // Clock timer
             var clk = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -195,6 +201,18 @@ namespace SMS
             _pnlTopBar.Controls.Add(_lblTitle);
             _pnlTopBar.Controls.Add(_lblClock);
 
+            // Add Refresh button to Top Bar
+            var btnRefreshAll = new MaterialButton
+            {
+                Text = "REFRESH DASHBOARD", AutoSize = false, Width = 180, Height = 36,
+                Type = MaterialButton.MaterialButtonType.Outlined,
+                Location = new Point(0, 18)
+            };
+            btnRefreshAll.Click += (_, _) => { LoadStats(); SetPage(0); };
+            _pnlTopBar.Controls.Add(btnRefreshAll);
+            _pnlTopBar.SizeChanged += (_, _) => 
+                btnRefreshAll.Location = new Point(_lblClock.Left - btnRefreshAll.Width - 20, 18);
+
             // ── Page panels (Fill) added before top-bar so top-bar wins top slot
             foreach (var pg in _pages)
             {
@@ -211,35 +229,107 @@ namespace SMS
         {
             _pgDash.Padding = new Padding(28, 20, 28, 20);
 
-            // Recent students grid (Fill – added first, processed last)
+            // ── 0. Recent Students Grid (Fill - Processed LAST) ──
             _dgvRecent.Dock = DockStyle.Fill;
             StyleDgv(_dgvRecent);
-            _pgDash.Controls.Add(_dgvRecent);  // index 0
+            _pgDash.Controls.Add(_dgvRecent); // index 0
 
-            // "Recent Students" heading
+            // ── 1. Recent Students Section (Top) ──
             var lblRecent = new Label
             {
                 Text = "Recent Students", Font = new Font("Segoe UI", 13F, FontStyle.Bold),
                 ForeColor = TextMain, BackColor = Color.Transparent,
-                AutoSize = false, Height = 44, Dock = DockStyle.Top,
+                AutoSize = false, Height = 40, Dock = DockStyle.Top,
                 TextAlign = ContentAlignment.BottomLeft
             };
-            _pgDash.Controls.Add(lblRecent);   // index 1
+            _pgDash.Controls.Add(lblRecent); // index 1
 
-            // Stat cards row
-            var flCards = new FlowLayoutPanel
+            // ── 2. Charts Row (Top) ──
+            var tlpCharts = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top, Height = 320,
+                RowCount = 1, ColumnCount = 2,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 10, 0, 20)
+            };
+            tlpCharts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
+            tlpCharts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+
+            var pie = new SimplePieChart { Dock = DockStyle.Fill };
+            var bar = new SimpleBarChart { Dock = DockStyle.Fill };
+            tlpCharts.Controls.Add(pie, 0, 0);
+            tlpCharts.Controls.Add(bar, 1, 0);
+            _pgDash.Controls.Add(tlpCharts); // index 2
+
+            // ── 3. Stat cards row (Top - Processed FIRST = Very Top) ──
+            var tlpCards = new TableLayoutPanel
             {
                 Dock = DockStyle.Top, Height = 148,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false, BackColor = Color.Transparent
+                RowCount = 1, ColumnCount = 5,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 0, 0, 16)
             };
-            flCards.Controls.Add(MakeStatCard("Total Students",  "🎓", Indigo,  out _valStudents));
-            flCards.Controls.Add(MakeStatCard("Total Courses",   "📚", Teal,    out _valCourses));
-            flCards.Controls.Add(MakeStatCard("Grades Recorded", "★",  Purple,  out _valGrades));
-            flCards.Controls.Add(MakeStatCard("Attendance Rate", "📅", Blue,    out _valAttRate));
-            flCards.Controls.Add(MakeStatCard("Average Score",   "📊", Amber,   out _valAvgScore));
-            _pgDash.Controls.Add(flCards);     // index 2 (highest – processed first = top) ✓
+            for (int i = 0; i < 5; i++) 
+                tlpCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+
+            tlpCards.Controls.Add(MakeStatCard("Total Students",  "🎓", Indigo,  out _valStudents), 0, 0);
+            tlpCards.Controls.Add(MakeStatCard("Total Courses",   "📚", Teal,    out _valCourses),  1, 0);
+            tlpCards.Controls.Add(MakeStatCard("Grades Recorded", "★",  Purple,  out _valGrades),   2, 0);
+            tlpCards.Controls.Add(MakeStatCard("Attendance Rate", "📅", Blue,    out _valAttRate),  3, 0);
+            tlpCards.Controls.Add(MakeStatCard("Average Score",   "📊", Amber,   out _valAvgScore), 4, 0);
+            _pgDash.Controls.Add(tlpCards); // index 3 (Highest index = Topmost position)
+
+            // Status info (sync time)
+            var lblStatus = new Label
+            {
+                Text = "Synced: " + DateTime.Now.ToString("HH:mm"),
+                Font = new Font("Segoe UI", 9F), ForeColor = TextSub, AutoSize = true,
+                BackColor = Color.Transparent
+            };
+            _pgDash.Controls.Add(lblStatus);
+
+            // Dynamic scaling on resize
+            _pgDash.SizeChanged += (_, _) => 
+            {
+                lblStatus.Location = new Point(_pgDash.Width - lblStatus.Width - 28, lblRecent.Top + 14);
+                
+                // Scale fonts if maximized
+                float scale = WindowState == FormWindowState.Maximized ? 1.2f : 1.0f;
+                lblRecent.Font = new Font("Segoe UI", 13F * scale, FontStyle.Bold);
+            };
+
+            // Update LoadStats to fill charts
+            _loadCharts = () =>
+            {
+                try
+                {
+                    using var db = new AppDbContext();
+                    
+                    var deptData = db.Students
+                        .GroupBy(s => s.Department)
+                        .Select(g => new { Name = g.Key ?? "Unspecified", Count = (double)g.Count() })
+                        .ToList()
+                        .ToDictionary(x => x.Name, x => x.Count);
+                    pie.Data = deptData;
+
+                    var levelData = db.Students
+                        .GroupBy(s => s.Level)
+                        .Select(g => new { 
+                            Name = g.Key ?? "Unknown", 
+                            Avg = g.SelectMany(s => s.Grades).Select(gr => gr.Score).DefaultIfEmpty(0).Average() 
+                        })
+                        .ToList()
+                        .ToDictionary(x => x.Name, x => x.Avg);
+                    bar.Data = levelData;
+
+                    pie.Invalidate();
+                    bar.Invalidate();
+                }
+                catch { }
+            };
         }
+
+        private Action? _loadCharts;
 
         // ─────────────────────────────────────────────────────────────────────
         //  Stat card factory
@@ -248,43 +338,61 @@ namespace SMS
         {
             var card = new Panel
             {
-                Width = 200, Height = 120, BackColor = BgCard,
-                Margin = new Padding(0, 0, 16, 0)
+                Dock = DockStyle.Fill, BackColor = BgCard,
+                Margin = new Padding(0, 0, 10, 0)
             };
 
-            // Top coloured stripe
+            // Gradient background
+            card.Paint += (s, e) =>
+            {
+                using var br = new LinearGradientBrush(card.ClientRectangle, 
+                    Color.FromArgb(35, 38, 62), Color.FromArgb(28, 30, 50), 90F);
+                e.Graphics.FillRectangle(br, card.ClientRectangle);
+            };
+
             var stripe = new Panel { Height = 4, Dock = DockStyle.Top, BackColor = accent };
             card.Controls.Add(stripe);
 
             // Faint oversized icon (top-right decorator)
             var iconLbl = new Label
             {
-                Text = icon, Font = new Font("Segoe UI", 22F),
-                ForeColor = Color.FromArgb(55, accent.R, accent.G, accent.B),
+                Text = icon, Font = new Font("Segoe UI", 26F),
+                ForeColor = Color.FromArgb(50, accent.R, accent.G, accent.B),
                 BackColor = Color.Transparent,
-                AutoSize = false, Size = new Size(52, 52),
-                Location = new Point(card.Width - 60, 8),
-                TextAlign = ContentAlignment.MiddleCenter
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Location = new Point(card.Width - 60, 15)
             };
             card.Controls.Add(iconLbl);
 
             // Big value
             valueLbl = new Label
             {
-                Text = "—", Font = new Font("Segoe UI", 30F, FontStyle.Bold),
+                Text = "—", Font = new Font("Segoe UI", 28F, FontStyle.Bold),
                 ForeColor = TextMain, BackColor = Color.Transparent,
-                AutoSize = true, Location = new Point(14, 24)
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Location = new Point(14, 24)
             };
             card.Controls.Add(valueLbl);
 
             // Caption
             var capLbl = new Label
             {
-                Text = title, Font = new Font("Segoe UI", 10F),
+                Text = title.ToUpper(), Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 ForeColor = TextSub, BackColor = Color.Transparent,
-                AutoSize = true, Location = new Point(14, 82)
+                AutoSize = true,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
+                Location = new Point(16, 95)
             };
             card.Controls.Add(capLbl);
+
+            // Force repositioning on resize
+            card.SizeChanged += (s, e) => 
+            {
+                iconLbl.Location = new Point(card.Width - iconLbl.Width - 12, 12);
+                capLbl.Location = new Point(16, card.Height - capLbl.Height - 15);
+            };
 
             return card;
         }
@@ -292,7 +400,7 @@ namespace SMS
         // ─────────────────────────────────────────────────────────────────────
         //  Sub-pages (Students / Courses / Grades / Attendance)
         // ─────────────────────────────────────────────────────────────────────
-        private void BuildSubPage(Panel page, DataGridView dgv)
+        private void BuildSubPage(Panel page, DataGridView dgv, BindingSource bs, int pageIndex)
         {
             page.Padding = new Padding(28, 20, 28, 20);
 
@@ -307,26 +415,25 @@ namespace SMS
 
             var btnRefresh = new MaterialButton
                 { Text = "⟳  REFRESH", AutoSize = false, Width = 130, Height = 38, Location = new Point(0, 5) };
-            btnRefresh.Click += (_, _) => LoadSubData(dgv, PageIndexOf(page));
+            btnRefresh.Click += (_, _) => LoadSubData(bs, pageIndex);
 
             var btnMgmt = new MaterialButton
             {
                 Text = "⚙  OPEN MANAGEMENT", HighEmphasis = true,
                 AutoSize = false, Width = 220, Height = 38, Location = new Point(140, 5)
             };
-            btnMgmt.Click += (_, _) => new SMS(PageIndexOf(page) - 1).Show();
+            btnMgmt.Click += (_, _) => 
+            {
+                new SMS(pageIndex - 1).ShowDialog();
+                LoadSubData(bs, pageIndex); // Automatically refresh grid when management closes
+            };
 
             toolbar.Controls.Add(btnRefresh);
             toolbar.Controls.Add(btnMgmt);
             page.Controls.Add(toolbar);  // index 1 (highest – processed first = top) ✓
         }
 
-        private int PageIndexOf(Panel page)
-        {
-            for (int i = 0; i < _pages.Length; i++)
-                if (_pages[i] == page) return i;
-            return 0;
-        }
+        // PageIndexOf has been replaced by isolated lexical scoping.
 
         // ─────────────────────────────────────────────────────────────────────
         //  Navigation
@@ -343,9 +450,11 @@ namespace SMS
 
             if (idx == 0) LoadStats();
             else          LoadSubData(
-                idx == 1 ? _dgvStud :
-                idx == 2 ? _dgvCrs  :
-                idx == 3 ? _dgvGrd  : _dgvAtt, idx);
+                (BindingSource)(
+                    idx == 1 ? _dgvStud.DataSource :
+                    idx == 2 ? _dgvCrs.DataSource  :
+                    idx == 3 ? _dgvGrd.DataSource  : _dgvAtt.DataSource
+                )!, idx);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -371,11 +480,19 @@ namespace SMS
                 _valAvgScore.Text = db.Grades.Any()
                     ? $"{db.Grades.Average(g => g.Score):0.0}"
                     : "N/A";
+                
+                _loadCharts?.Invoke();
 
                 _dgvRecent.DataSource = db.Students
                     .OrderByDescending(s => s.StudentId)
                     .Take(10)
-                    .Select(s => new { s.StudentId, s.Name, s.Age, s.Department })
+                    .Select(s => new 
+                    { 
+                        s.StudentId, 
+                        s.Name, 
+                        Age = DateTime.Today.Year - s.BirthDate.Year, 
+                        s.Department 
+                    })
                     .ToList();
             }
             catch (Exception ex)
@@ -384,22 +501,31 @@ namespace SMS
             }
         }
 
-        private void LoadSubData(DataGridView dgv, int idx)
+        private void LoadSubData(BindingSource bs, int idx)
         {
             try
             {
                 using var db = new AppDbContext();
-                dgv.DataSource = idx switch
+                bs.DataSource = idx switch
                 {
                     1 => (object)db.Students
-                             .Select(s => new { s.StudentId, s.Name, s.Age, s.Department })
+                             .Select(s => new 
+                             { 
+                                 s.StudentId, 
+                                 s.Name, 
+                                 Age = DateTime.Today.Year - s.BirthDate.Year, 
+                                 s.Department, 
+                                 s.Level, 
+                                 s.Phone, 
+                                 BirthDate = s.BirthDate.ToString() 
+                             })
                              .ToList(),
                     2 => db.Courses
                              .Select(c => new { c.CourseId, c.Name, c.Code, c.Description, c.Credits })
                              .ToList(),
                     3 => db.Grades.Include(g => g.Student).Include(g => g.Course)
                              .Select(g => new { g.GradeId, Student = g.Student.Name,
-                                 Course = g.Course.Name, g.Score, g.LetterGrade, g.Semester })
+                                 Course = g.Course.Name, g.Score, LetterGrade = g.Score >= 90 ? "A" : g.Score >= 80 ? "B" : g.Score >= 70 ? "C" : g.Score >= 60 ? "D" : "F", g.Semester })
                              .ToList(),
                     4 => db.Attendances.Include(a => a.Student).Include(a => a.Course)
                              .Select(a => new { a.AttendanceId, Student = a.Student.Name,
@@ -469,6 +595,8 @@ namespace SMS
         private sealed class NavButton : Panel
         {
             private bool _hover;
+            private float _transition = 0f; // 0.0 (normal) to 1.0 (hover)
+            private readonly System.Windows.Forms.Timer _animTimer;
             [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             public string NavIcon  { get; set; } = "○";
 
@@ -483,8 +611,17 @@ namespace SMS
                 DoubleBuffered = true;
                 Height         = 58;
                 Cursor         = Cursors.Hand;
-                MouseEnter    += (_, _) => { _hover = true;  Invalidate(); };
-                MouseLeave    += (_, _) => { _hover = false; Invalidate(); };
+
+                _animTimer = new System.Windows.Forms.Timer { Interval = 16 }; // ~60fps
+                _animTimer.Tick += (_, _) =>
+                {
+                    if (_hover && _transition < 1.0f) { _transition += 0.15f; if (_transition > 1f) _transition = 1f; Invalidate(); }
+                    else if (!_hover && _transition > 0.0f) { _transition -= 0.15f; if (_transition < 0f) _transition = 0f; Invalidate(); }
+                    else if (!_hover && _transition <= 0.0f || _hover && _transition >= 1.0f) _animTimer.Stop();
+                };
+
+                MouseEnter    += (_, _) => { _hover = true;  _animTimer.Start(); };
+                MouseLeave    += (_, _) => { _hover = false; _animTimer.Start(); };
             }
 
             protected override void OnPaint(PaintEventArgs e)
@@ -492,11 +629,15 @@ namespace SMS
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                // Background
-                Color bg = IsActive ? Color.FromArgb(48, 63, 159)
-                         : _hover   ? Color.FromArgb(33, 35, 55)
-                                    : Color.FromArgb(22, 22, 38);
-                using (var br = new SolidBrush(bg))
+                // Background color interpolation
+                Color baseBg = IsActive ? Color.FromArgb(48, 63, 159) : Color.FromArgb(22, 22, 38);
+                Color hoverBg = Color.FromArgb(38, 42, 68);
+                
+                int r = (int)(baseBg.R + (hoverBg.R - baseBg.R) * _transition);
+                int gB = (int)(baseBg.G + (hoverBg.G - baseBg.G) * _transition);
+                int b = (int)(baseBg.B + (hoverBg.B - baseBg.B) * _transition);
+                
+                using (var br = new SolidBrush(Color.FromArgb(r, gB, b)))
                     g.FillRectangle(br, 0, 0, Width, Height);
 
                 // Active left indicator bar (cyan accent)
@@ -520,6 +661,82 @@ namespace SMS
                 using var lblFont = new Font("Segoe UI", 11F, IsActive ? FontStyle.Bold : FontStyle.Regular);
                 using var lblBr   = new SolidBrush(IsActive ? Color.White : Color.FromArgb(150, 160, 210));
                 g.DrawString(NavLabel, lblFont, lblBr, new RectangleF(55, 0, Width - 60, Height), lblFmt);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Custom Charts
+        // ─────────────────────────────────────────────────────────────────────
+        private class SimplePieChart : Panel
+        {
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public Dictionary<string, double> Data { get; set; } = new();
+            public SimplePieChart() { DoubleBuffered = true; BackColor = Color.Transparent; ResizeRedraw = true; }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(50, 50, Math.Min(Width, Height) - 100, Math.Min(Width, Height) - 100);
+                if (Data.Count == 0) return;
+
+                float total = (float)Data.Values.Sum();
+                float startAngle = 0;
+                Color[] colors = { Color.FromArgb(48, 63, 159), Color.FromArgb(0, 150, 136), Color.FromArgb(103, 58, 183), Color.FromArgb(21, 101, 192), Color.FromArgb(245, 124, 0) };
+
+                int i = 0;
+                foreach (var kvp in Data)
+                {
+                    float sweep = (float)(kvp.Value / total * 360);
+                    using var br = new SolidBrush(colors[i % colors.Length]);
+                    g.FillPie(br, rect, startAngle, sweep);
+                    
+                    // Legend
+                    using var f = new Font("Segoe UI", 9F);
+                    using var bText = new SolidBrush(Color.FromArgb(160, 170, 210));
+                    g.FillRectangle(br, Width - 140, 60 + i * 25, 12, 12);
+                    g.DrawString($"{kvp.Key} ({kvp.Value})", f, bText, Width - 120, 58 + i * 25);
+
+                    startAngle += sweep; i++;
+                }
+                using var fTitle = new Font("Segoe UI", 11F, FontStyle.Bold);
+                using var bTitle = new SolidBrush(Color.White);
+                g.DrawString("Department Distribution", fTitle, bTitle, 20, 10);
+            }
+        }
+
+        private class SimpleBarChart : Panel
+        {
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public Dictionary<string, double> Data { get; set; } = new();
+            public SimpleBarChart() { DoubleBuffered = true; BackColor = Color.Transparent; ResizeRedraw = true; }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias;
+                if (Data.Count == 0) return;
+
+                float max = (float)Data.Values.Max(); if (max == 0) max = 100;
+                int i = 0; int barW = 45; int gap = 30;
+                int startX = 60; int bottom = Height - 60;
+
+                foreach (var kvp in Data)
+                {
+                    int x = startX + i * (barW + gap);
+                    float h = (float)(kvp.Value / max * (bottom - 60));
+                    var r = new RectangleF(x, bottom - h, barW, h);
+
+                    using var br = new LinearGradientBrush(r, Color.FromArgb(0, 150, 136), Color.FromArgb(0, 77, 64), 90F);
+                    g.FillRectangle(br, r);
+
+                    using var f = new Font("Segoe UI", 8F);
+                    using var bText = new SolidBrush(Color.FromArgb(160, 170, 210));
+                    g.DrawString(kvp.Key, f, bText, x - 5, bottom + 10);
+                    g.DrawString($"{kvp.Value:0}", f, bText, x + 5, bottom - h - 20);
+                    i++;
+                }
+                using var fTitle = new Font("Segoe UI", 11F, FontStyle.Bold);
+                using var bTitle = new SolidBrush(Color.White);
+                g.DrawString("Performance by Level", fTitle, bTitle, 20, 10);
             }
         }
     }

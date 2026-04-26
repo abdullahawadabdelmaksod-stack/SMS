@@ -4,7 +4,7 @@ namespace SMS.Models
     /// Records a student's attendance for a specific course on a given date.
     /// Student → Attendance is one-to-many; Course → Attendance is one-to-many.
     /// </summary>
-    public class Attendance
+    public class Attendance : AuditableEntity
     {
         public int      AttendanceId { get; set; }
         public DateTime Date     { get; set; }

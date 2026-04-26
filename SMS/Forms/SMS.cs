@@ -20,6 +20,10 @@ namespace SMS
         private DataGridView _dgvGrades     = new();
         private DataGridView _dgvAttendances= new();
 
+        // ── Dynamic Student Controls ─────────────────────────────────────────
+        private MaterialTextBox2 txtPhone = new(), txtBirthDate = new();
+        private MaterialComboBox txtLevel = new();
+
         // ── Course editor controls ────────────────────────────────────────────
         private MaterialTextBox2 _txtCourseId = new(), _txtCourseName = new(),
             _txtCourseCode = new(), _txtCourseDesc = new(), _txtCourseCredits = new(),
@@ -39,7 +43,7 @@ namespace SMS
         // ── Attendance editor controls ────────────────────────────────────────
         private MaterialTextBox2 _txtAttId = new(), _txtAttStudentId = new(),
             _txtAttCourseId = new(), _txtAttDate = new(), _txtAttNotes = new(),
-            _txtAttSearch = new();
+            _txtAttSearch = new(), _txtAttCourseSearch = new();
         private CheckBox _chkAttPresent = new();
         private MaterialButton _btnAttAdd = new(), _btnAttUpdate = new(),
             _btnAttDelete = new(), _btnAttSearch = new();
@@ -58,7 +62,8 @@ namespace SMS
         {
             _initialTab = initialTab;
             InitializeComponent();
-
+            _txtGradeId.ReadOnly = true; // Grade ID is auto-generated
+            _txtGradeId.Text = "(Auto Assigned)";
             // MaterialSkin
             var skin = MaterialSkinManager.Instance;
             skin.AddFormToManage(this);
@@ -66,7 +71,7 @@ namespace SMS
             skin.ColorScheme = new ColorScheme(
                 Primary.Indigo800, Primary.Indigo900, Primary.Indigo500,
                 Accent.Teal200, TextShade.WHITE);
-
+            
             ApplyFonts();
             StyleDgv(dataGridView1);
 
@@ -91,6 +96,30 @@ namespace SMS
             _picLogo.BringToFront();
             UIHelper.MakeCircular(_picLogo);
 
+            // Initialize dynamic student controls
+            txtPhone.Hint = "Phone";
+            txtBirthDate.Hint = "Birth Date (YYYY-MM-DD)";
+            txtAge.Hint = "Age (Auto-calculated)";
+            txtAge.ReadOnly = true;
+            txtLevel.Hint = "Level";
+            txtLevel.Items.AddRange(new object[] { "Freshman", "Sophomore", "Junior", "Senior" });
+            materialCard1.Controls.AddRange(new Control[] { txtPhone, txtBirthDate, txtLevel });
+
+            // Auto-calculate Age as user types Birth Date
+            txtBirthDate.TextChanged += (_, _) =>
+            {
+                if (DateOnly.TryParse(txtBirthDate.Text, out var dob))
+                {
+                    int age = DateTime.Today.Year - dob.Year;
+                    if (dob > DateOnly.FromDateTime(DateTime.Today.AddYears(-age))) age--;
+                    txtAge.Text = age.ToString();
+                }
+                else
+                {
+                    txtAge.Text = "";
+                }
+            };
+
             // Build left-panel tabs
             InitTabControl();
 
@@ -98,6 +127,16 @@ namespace SMS
             InitCourseEditor();
             InitGradeEditor();
             InitAttendanceEditor();
+
+            // Enforce color rules
+            ConfigBtn(btnSearch, "SEARCH", btnSearch_Click);
+            ConfigBtn(btnAdd, "ADD STUDENT", btnAdd_Click);
+            ConfigBtn(btnUpdate, "UPDATE", btnUpdate_Click);
+            ConfigBtn(btnDelete, "DELETE", btnDelete_Click);
+            btnAdd.HighEmphasis = true;
+
+            // Update search hint
+            txtSearch.Hint = "Search by ID, name, or phone...";
 
             // ── Quick-nav buttons in student editor ──────────────────────────
             _btnViewGrades.Text         = "VIEW GRADES →";
@@ -230,9 +269,19 @@ namespace SMS
             _txtGradeStudentId.Hint = "Student ID";
             _txtGradeCourseId.Hint  = "Course ID";
             _txtGradeScore.Hint     = "Score (0 – 100)";
-            _txtGradeLetter.Hint    = "Letter Grade (A / B / C / D / F)";
+            _txtGradeLetter.Hint    = "Letter Grade (Auto-calculated)";
+            _txtGradeLetter.ReadOnly = true; // Auto-calculated!
             _txtGradeSemester.Hint  = "Semester (e.g. 2024-S1)";
             _txtGradeSearch.Hint    = "Search by Student ID…";
+
+            // Dynamically calculate Letter Grade as user types
+            _txtGradeScore.TextChanged += (_, _) =>
+            {
+                if (double.TryParse(_txtGradeScore.Text, out var score))
+                    _txtGradeLetter.Text = CalculateLetterGrade(score);
+                else
+                    _txtGradeLetter.Text = "";
+            };
 
             ConfigBtn(_btnGradeAdd,    "ADD GRADE", BtnGradeAdd_Click);
             ConfigBtn(_btnGradeSearch, "SEARCH",    (_, _) => LoadGrades(_txtGradeSearch.Text));
@@ -266,8 +315,11 @@ namespace SMS
             _chkAttPresent.Font      = new Font("Segoe UI", 11F);
             _chkAttPresent.BackColor = Color.Transparent;
 
+            _txtAttCourseSearch.Hint = "Search by Course ID";
+
             ConfigBtn(_btnAttAdd,    "ADD ATTENDANCE", BtnAttAdd_Click);
-            ConfigBtn(_btnAttSearch, "SEARCH",         (_, _) => LoadAttendances(_txtAttSearch.Text));
+            ConfigBtn(_btnAttSearch, "SEARCH",
+                (_, _) => LoadAttendances(_txtAttSearch.Text, _txtAttCourseSearch.Text));
             ConfigBtn(_btnAttUpdate, "UPDATE",         BtnAttUpdate_Click);
             ConfigBtn(_btnAttDelete, "DELETE",         BtnAttDelete_Click);
             _btnAttAdd.HighEmphasis = true;
@@ -275,9 +327,9 @@ namespace SMS
             _pnlAttendance.Visible = false;
             _pnlAttendance.Controls.AddRange(new Control[]
             {
-                _txtAttId, _txtAttStudentId, _txtAttCourseId, _txtAttDate,
-                _chkAttPresent, _txtAttNotes,
-                _btnAttAdd, _txtAttSearch, _btnAttSearch, _btnAttUpdate, _btnAttDelete
+                _txtAttId, _txtAttStudentId, _txtAttCourseId, _txtAttDate, _txtAttNotes,
+                _chkAttPresent, _txtAttSearch, _txtAttCourseSearch, _btnAttAdd, _btnAttSearch,
+                _btnAttUpdate, _btnAttDelete
             });
             materialCard1.Controls.Add(_pnlAttendance);
         }
@@ -286,6 +338,7 @@ namespace SMS
         {
             btn.Text = text;
             btn.AutoSize = false;
+            btn.HighEmphasis = true; // Globally enforce uniform coloring
             btn.Click += handler;
         }
 
@@ -295,9 +348,8 @@ namespace SMS
         private void SetActiveTab(int idx)
         {
             bool isStudent = idx == 0;
-
-            // Student controls (in designer / materialCard1 directly)
             txtId.Visible = txtName.Visible = txtAge.Visible = txtDepartment.Visible = isStudent;
+            txtPhone.Visible = txtBirthDate.Visible = txtLevel.Visible = isStudent;
             btnAdd.Visible = txtSearch.Visible = btnSearch.Visible =
                 btnUpdate.Visible = btnDelete.Visible = isStudent;
             _btnViewGrades.Visible     = isStudent;
@@ -439,7 +491,10 @@ namespace SMS
             Place(txtId,         x, usable, ref y, 12);
             Place(txtName,       x, usable, ref y, 12);
             Place(txtAge,        x, usable, ref y, 12);
-            Place(txtDepartment, x, usable, ref y, 24);
+            Place(txtDepartment, x, usable, ref y, 12);
+            Place(txtPhone,      x, usable, ref y, 12);
+            Place(txtBirthDate,  x, usable, ref y, 12);
+            Place(txtLevel,      x, usable, ref y, 24);
 
             btnAdd.Left = x; btnAdd.Width = usable; btnAdd.Top = y;
             y = btnAdd.Bottom + 20;
@@ -496,7 +551,9 @@ namespace SMS
             _btnAttAdd.Left = 0; _btnAttAdd.Width = w; _btnAttAdd.Top = y;
             y = _btnAttAdd.Bottom + 16;
 
-            _txtAttSearch.Left = 0; _txtAttSearch.Width = w; _txtAttSearch.Top = y;
+            int gap2 = 10, half2 = (w - gap2) / 2;
+            _txtAttSearch.Left       = 0;           _txtAttSearch.Width       = half2; _txtAttSearch.Top = y;
+            _txtAttCourseSearch.Left = half2 + gap2; _txtAttCourseSearch.Width = w - half2 - gap2; _txtAttCourseSearch.Top = y;
             y = _txtAttSearch.Bottom + 10;
 
             int g = 10, bW = (w - g * 2) / 3;
@@ -534,49 +591,101 @@ namespace SMS
         //  STUDENT CRUD
         // ─────────────────────────────────────────────────────────────────────
         private void LoadStudents()
-            => dataGridView1.DataSource = _service.GetStudents();
+        {
+            using var db = new AppDbContext();
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            dataGridView1.DataSource = db.Students
+                .Select(s => new 
+                { 
+                    s.StudentId, 
+                    s.Name, 
+                    Age = today.Year - s.BirthDate.Year, // Approx for grid
+                    s.Department, 
+                    s.Level, 
+                    s.Phone, 
+                    BirthDate = s.BirthDate.ToString() 
+                })
+                .ToList();
+        }
 
         private void ClearStudent()
-            => txtId.Text = txtName.Text = txtAge.Text = txtDepartment.Text = "";
-
-        private void btnAdd_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtName.Text)) { Warn("Name is required."); return; }
-            if (!int.TryParse(txtAge.Text, out var age)) { Warn("Age must be a number."); return; }
+            txtId.Text = txtName.Text = txtAge.Text = txtPhone.Text = txtBirthDate.Text = "";
+            txtLevel.SelectedIndex = -1;
+            txtDepartment.SelectedIndex = -1;
+        }
+
+        private void btnAdd_Click(object? sender, EventArgs e)
+        {
+            if (txtName.Text.Any(char.IsDigit)) { Warn("Name cannot contain numbers."); return; }
+            if (txtDepartment.SelectedIndex == -1) { Warn("Department is required."); return; }
+            if (!DateOnly.TryParse(txtBirthDate.Text, out var dob)) { Warn("Invalid birth date format."); return; }
+            if (txtLevel.SelectedIndex == -1) { Warn("Level is required."); return; }
+            if (txtPhone.Text.Trim().Length > 20) { Warn("Phone number cannot exceed 20 characters."); return; }
             try
             {
                 _service.AddStudent(new Student
-                    { Name = txtName.Text.Trim(), Age = age, Department = txtDepartment.Text.Trim() });
+                    { Name = txtName.Text.Trim(), Department = txtDepartment.Text.Trim(),
+                      Phone = txtPhone.Text.Trim(), BirthDate = dob, Level = txtLevel.Text.Trim() });
                 Info("Student added."); LoadStudents(); ClearStudent();
             }
             catch (Exception ex) { Err(ex.Message); }
         }
 
-        private void btnUpdate_Click(object sender, EventArgs e)
+        private void btnUpdate_Click(object? sender, EventArgs e)
         {
-            if (!int.TryParse(txtId.Text, out var id) || id <= 0) { Warn("Select a student first."); return; }
-            if (!int.TryParse(txtAge.Text, out var age))           { Warn("Age must be a number."); return; }
+            if (!int.TryParse(txtId.Text, out var id) || id <= 0) {  return; }
+            if (string.IsNullOrWhiteSpace(txtName.Text)) { Warn("Please enter a student name in the Full Name field."); return; }
+            if (txtName.Text.Any(char.IsDigit)) { Warn("Name cannot contain numbers."); return; }
+            if (txtDepartment.SelectedIndex == -1) { Warn("Department is required."); return; }
+            if (!DateOnly.TryParse(txtBirthDate.Text, out var dob)) { Warn("Invalid birth date format."); return; }
+            if (txtLevel.SelectedIndex == -1) { Warn("Level is required."); return; }
+            if (txtPhone.Text.Trim().Length > 20) { Warn("Phone number cannot exceed 20 characters."); return; }
             try
             {
                 _service.UpdateStudent(new Student
-                    { StudentId = id, Name = txtName.Text.Trim(), Age = age, Department = txtDepartment.Text.Trim() });
+                    { StudentId = id, Name = txtName.Text.Trim(), Department = txtDepartment.Text.Trim(),
+                      Phone = txtPhone.Text.Trim(), BirthDate = dob, Level = txtLevel.Text.Trim() });
                 Info("Student updated."); LoadStudents(); ClearStudent();
             }
             catch (Exception ex) { Err(ex.Message); }
         }
 
-        private void btnDelete_Click(object sender, EventArgs e)
+        private void btnDelete_Click(object? sender, EventArgs e)
         {
-            if (!int.TryParse(txtId.Text, out var id) || id <= 0) { Warn("Select a student first."); return; }
+            if (!int.TryParse(txtId.Text, out var id) || id <= 0) { ; return; }
             if (Ask("Delete this student? Their grades and attendance will also be deleted.") != DialogResult.Yes) return;
             try { _service.DeleteStudent(id); Info("Student deleted."); LoadStudents(); ClearStudent(); }
             catch (Exception ex) { Err(ex.Message); }
         }
 
-        private void btnSearch_Click(object sender, EventArgs e)
+        private void btnSearch_Click(object? sender, EventArgs e)
         {
             var q = txtSearch.Text.Trim();
-            try { dataGridView1.DataSource = string.IsNullOrEmpty(q) ? _service.GetStudents() : _service.Search(q); }
+            try 
+            { 
+                using var db = new AppDbContext();
+                var query = db.Students.AsQueryable();
+                if (!string.IsNullOrEmpty(q))
+                {
+                    if (int.TryParse(q, out int id) && q.Length <= 8)
+                        query = query.Where(s => s.StudentId == id);
+                    else
+                        query = query.Where(s => s.Name.Contains(q) || s.Department.Contains(q) || s.Level.Contains(q) || s.Phone.Contains(q));
+                }
+                dataGridView1.DataSource = query
+                    .Select(s => new 
+                    { 
+                        s.StudentId, 
+                        s.Name, 
+                        Age = DateTime.Today.Year - s.BirthDate.Year, 
+                        s.Department, 
+                        s.Level, 
+                        s.Phone, 
+                        BirthDate = s.BirthDate.ToString() 
+                    })
+                    .ToList();
+            }
             catch (Exception ex) { Err(ex.Message); }
         }
 
@@ -584,10 +693,13 @@ namespace SMS
         {
             if (e.RowIndex < 0) return;
             var row = dataGridView1.Rows[e.RowIndex];
-            txtId.Text         = row.Cells["StudentId"]?.Value?.ToString()         ?? "";
+            txtId.Text         = row.Cells["StudentId"]?.Value?.ToString()  ?? "";
             txtName.Text       = row.Cells["Name"]?.Value?.ToString()       ?? "";
             txtAge.Text        = row.Cells["Age"]?.Value?.ToString()        ?? "";
             txtDepartment.Text = row.Cells["Department"]?.Value?.ToString() ?? "";
+            txtPhone.Text      = row.Cells["Phone"]?.Value?.ToString()      ?? "";
+            txtBirthDate.Text  = row.Cells["BirthDate"]?.Value?.ToString()  ?? "";
+            txtLevel.Text      = row.Cells["Level"]?.Value?.ToString()      ?? "";
 
             // Cross-link: pre-load this student's grades & attendance in the other tabs
             if (int.TryParse(txtId.Text, out var sid))
@@ -715,7 +827,7 @@ namespace SMS
                     Student  = g.Student.Name,
                     Course   = g.Course.Name,
                     g.Score,
-                    g.LetterGrade,
+                    LetterGrade = g.Score >= 90 ? "A" : g.Score >= 80 ? "B" : g.Score >= 70 ? "C" : g.Score >= 60 ? "D" : "F",
                     g.Semester
                 }).ToList();
         }
@@ -724,9 +836,17 @@ namespace SMS
             => _txtGradeId.Text = _txtGradeStudentId.Text = _txtGradeCourseId.Text =
                _txtGradeScore.Text = _txtGradeLetter.Text = _txtGradeSemester.Text = "";
 
+        private string CalculateLetterGrade(double score) => score switch
+        {
+            >= 90 => "A",
+            >= 80 => "B",
+            >= 70 => "C",
+            >= 60 => "D",
+            _     => "F"
+        };
+
         private void BtnGradeAdd_Click(object? sender, EventArgs e)
         {
-            if (!int.TryParse(_txtGradeId.Text, out var gid))         { Warn("Grade ID is required."); return; }
             if (!int.TryParse(_txtGradeStudentId.Text, out var sid))  { Warn("Valid Student ID required."); return; }
             if (!int.TryParse(_txtGradeCourseId.Text,  out var cid))  { Warn("Valid Course ID required.");  return; }
             if (!double.TryParse(_txtGradeScore.Text,  out var score)){ Warn("Score must be a number.");    return; }
@@ -735,9 +855,8 @@ namespace SMS
                 using var db = new AppDbContext();
                 db.Grades.Add(new Grade
                 {
-                    GradeId = gid,
                     StudentId = sid, CourseId = cid, Score = score,
-                    LetterGrade = _txtGradeLetter.Text.Trim(),
+                    LetterGrade = CalculateLetterGrade(score),
                     Semester    = _txtGradeSemester.Text.Trim()
                 });
                 db.SaveChanges();
@@ -759,7 +878,9 @@ namespace SMS
                 using var db = new AppDbContext();
                 var g = db.Grades.Find(id);
                 if (g == null) { Warn("Grade not found."); return; }
-                g.Score = score; g.LetterGrade = _txtGradeLetter.Text.Trim(); g.Semester = _txtGradeSemester.Text.Trim();
+                g.Score = score; 
+                g.LetterGrade = CalculateLetterGrade(score); 
+                g.Semester = _txtGradeSemester.Text.Trim();
                 db.SaveChanges();
                 Info("Grade updated."); LoadGrades(); ClearGrade();
             }
@@ -793,17 +914,24 @@ namespace SMS
         // ─────────────────────────────────────────────────────────────────────
         //  ATTENDANCE CRUD
         // ─────────────────────────────────────────────────────────────────────
-        private void LoadAttendances(string filter = "")
+        private void LoadAttendances(string filterStudentId = "", string filterCourseId = "")
         {
             using var db = new AppDbContext();
             var q = db.Attendances.Include(a => a.Student).Include(a => a.Course).AsQueryable();
-            if (!string.IsNullOrWhiteSpace(filter) && int.TryParse(filter, out var sid))
+
+            if (!string.IsNullOrWhiteSpace(filterStudentId) && int.TryParse(filterStudentId, out var sid))
                 q = q.Where(a => a.StudentId == sid);
+
+            if (!string.IsNullOrWhiteSpace(filterCourseId) && int.TryParse(filterCourseId, out var cid))
+                q = q.Where(a => a.CourseId == cid);
+
             _dgvAttendances.DataSource = q
                 .Select(a => new
                 {
                     a.AttendanceId,
+                    a.StudentId,
                     Student   = a.Student.Name,
+                    a.CourseId,
                     Course    = a.Course.Name,
                     a.Date,
                     a.IsPresent,

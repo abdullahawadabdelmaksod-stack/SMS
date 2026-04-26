@@ -1,11 +1,14 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SMS.Models
 {
     /// <summary>
     /// A grade record linking one Student to one Course.
     /// Student → Grade is one-to-many; Course → Grade is one-to-many.
     /// </summary>
-    public class Grade
+    public class Grade : AuditableEntity
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int    GradeId   { get; set; }
         public double Score     { get; set; }          // 0.0 – 100.0
         public string LetterGrade { get; set; } = string.Empty;  // A, B, C, D, F

@@ -83,14 +83,8 @@ namespace SMS
                 return;
             }
 
-            // Seed default admin if DB is empty
-            if (!_context.Users.Any())
-            {
-                _context.Users.Add(new User { Username = "admin", Password = "123" });
-                _context.SaveChanges();
-            }
-
-            var user = _context.Users
+            using var db = new AppDbContext();
+            var user = db.Users
                 .FirstOrDefault(u => u.Username == username && u.Password == password);
 
             if (user != null)

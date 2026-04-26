@@ -34,7 +34,7 @@ namespace SMS
             btnSearch = new MaterialSkin.Controls.MaterialButton();
             txtSearch = new MaterialSkin.Controls.MaterialTextBox2();
             btnAdd = new MaterialSkin.Controls.MaterialButton();
-            txtDepartment = new MaterialSkin.Controls.MaterialTextBox2();
+            txtDepartment = new MaterialSkin.Controls.MaterialComboBox();
             txtAge = new MaterialSkin.Controls.MaterialTextBox2();
             txtName = new MaterialSkin.Controls.MaterialTextBox2();
             txtId = new MaterialSkin.Controls.MaterialTextBox2();
@@ -123,17 +123,17 @@ namespace SMS
             btnDelete.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             btnDelete.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
             btnDelete.Depth = 0;
-            btnDelete.HighEmphasis = false;
+            btnDelete.HighEmphasis = true;
             btnDelete.Icon = null;
-            btnDelete.Location = new Point(337, 873);
+            btnDelete.Location = new Point(262, 858);
             btnDelete.Margin = new Padding(6, 10, 6, 10);
             btnDelete.MouseState = MaterialSkin.MouseState.HOVER;
             btnDelete.Name = "btnDelete";
             btnDelete.NoAccentTextColor = Color.Empty;
-            btnDelete.Size = new Size(129, 67);
+            btnDelete.Size = new Size(207, 52);
             btnDelete.TabIndex = 10;
             btnDelete.Text = "DELETE";
-            btnDelete.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            btnDelete.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
             btnDelete.UseAccentColor = false;
             btnDelete.UseVisualStyleBackColor = true;
             btnDelete.Click += btnDelete_Click;
@@ -144,17 +144,17 @@ namespace SMS
             btnUpdate.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             btnUpdate.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
             btnUpdate.Depth = 0;
-            btnUpdate.HighEmphasis = false;
+            btnUpdate.HighEmphasis = true;
             btnUpdate.Icon = null;
-            btnUpdate.Location = new Point(189, 873);
+            btnUpdate.Location = new Point(262, 858);
             btnUpdate.Margin = new Padding(6, 10, 6, 10);
             btnUpdate.MouseState = MaterialSkin.MouseState.HOVER;
             btnUpdate.Name = "btnUpdate";
             btnUpdate.NoAccentTextColor = Color.Empty;
-            btnUpdate.Size = new Size(129, 67);
+            btnUpdate.Size = new Size(207, 52);
             btnUpdate.TabIndex = 9;
             btnUpdate.Text = "UPDATE";
-            btnUpdate.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            btnUpdate.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
             btnUpdate.UseAccentColor = false;
             btnUpdate.UseVisualStyleBackColor = true;
             btnUpdate.Click += btnUpdate_Click;
@@ -165,17 +165,17 @@ namespace SMS
             btnSearch.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             btnSearch.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
             btnSearch.Depth = 0;
-            btnSearch.HighEmphasis = false;
+            btnSearch.HighEmphasis = true;
             btnSearch.Icon = null;
-            btnSearch.Location = new Point(40, 873);
+            btnSearch.Location = new Point(40, 858);
             btnSearch.Margin = new Padding(6, 10, 6, 10);
             btnSearch.MouseState = MaterialSkin.MouseState.HOVER;
             btnSearch.Name = "btnSearch";
             btnSearch.NoAccentTextColor = Color.Empty;
-            btnSearch.Size = new Size(129, 67);
+            btnSearch.Size = new Size(207, 52);
             btnSearch.TabIndex = 8;
             btnSearch.Text = "SEARCH";
-            btnSearch.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            btnSearch.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
             btnSearch.UseAccentColor = false;
             btnSearch.UseVisualStyleBackColor = true;
             btnSearch.Click += btnSearch_Click;
@@ -203,7 +203,7 @@ namespace SMS
             txtSearch.SelectionLength = 0;
             txtSearch.SelectionStart = 0;
             txtSearch.ShortcutsEnabled = true;
-            txtSearch.Size = new Size(429, 48);
+            txtSearch.Size = new Size(563, 48);
             txtSearch.TabIndex = 7;
             txtSearch.TabStop = false;
             txtSearch.TextAlign = HorizontalAlignment.Left;
@@ -223,7 +223,7 @@ namespace SMS
             btnAdd.MouseState = MaterialSkin.MouseState.HOVER;
             btnAdd.Name = "btnAdd";
             btnAdd.NoAccentTextColor = Color.Empty;
-            btnAdd.Size = new Size(429, 73);
+            btnAdd.Size = new Size(563, 52);
             btnAdd.TabIndex = 6;
             btnAdd.Text = "ADD STUDENT";
             btnAdd.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
@@ -233,33 +233,27 @@ namespace SMS
             // 
             // txtDepartment
             // 
-            txtDepartment.AnimateReadOnly = false;
-            txtDepartment.BackgroundImageLayout = ImageLayout.None;
-            txtDepartment.CharacterCasing = CharacterCasing.Normal;
+            txtDepartment.AutoResize = false;
+            txtDepartment.BackColor = Color.FromArgb(255, 255, 255);
             txtDepartment.Depth = 0;
-            txtDepartment.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
-            txtDepartment.HideSelection = true;
+            txtDepartment.DrawMode = DrawMode.OwnerDrawVariable;
+            txtDepartment.DropDownHeight = 174;
+            txtDepartment.DropDownStyle = ComboBoxStyle.DropDownList;
+            txtDepartment.DropDownWidth = 121;
+            txtDepartment.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Bold, GraphicsUnit.Pixel);
+            txtDepartment.ForeColor = Color.FromArgb(222, 0, 0, 0);
+            txtDepartment.FormattingEnabled = true;
             txtDepartment.Hint = "Department";
-            txtDepartment.LeadingIcon = null;
+            txtDepartment.IntegralHeight = false;
+            txtDepartment.ItemHeight = 43;
             txtDepartment.Location = new Point(40, 500);
-            txtDepartment.Margin = new Padding(4, 5, 4, 5);
-            txtDepartment.MaxLength = 100;
+            txtDepartment.MaxDropDownItems = 4;
             txtDepartment.MouseState = MaterialSkin.MouseState.OUT;
             txtDepartment.Name = "txtDepartment";
-            txtDepartment.PasswordChar = '\0';
-            txtDepartment.PrefixSuffixText = null;
-            txtDepartment.ReadOnly = false;
-            txtDepartment.RightToLeft = RightToLeft.No;
-            txtDepartment.SelectedText = "";
-            txtDepartment.SelectionLength = 0;
-            txtDepartment.SelectionStart = 0;
-            txtDepartment.ShortcutsEnabled = true;
-            txtDepartment.Size = new Size(429, 48);
+            txtDepartment.Size = new Size(563, 49);
+            txtDepartment.StartIndex = 0;
             txtDepartment.TabIndex = 5;
-            txtDepartment.TabStop = false;
-            txtDepartment.TextAlign = HorizontalAlignment.Left;
-            txtDepartment.TrailingIcon = null;
-            txtDepartment.UseSystemPasswordChar = false;
+            txtDepartment.Items.AddRange(new object[] { "CS", "AI", "IS", "SE" });
             // 
             // txtAge
             // 
@@ -284,7 +278,7 @@ namespace SMS
             txtAge.SelectionLength = 0;
             txtAge.SelectionStart = 0;
             txtAge.ShortcutsEnabled = true;
-            txtAge.Size = new Size(429, 48);
+            txtAge.Size = new Size(563, 48);
             txtAge.TabIndex = 4;
             txtAge.TabStop = false;
             txtAge.TextAlign = HorizontalAlignment.Left;
@@ -314,7 +308,7 @@ namespace SMS
             txtName.SelectionLength = 0;
             txtName.SelectionStart = 0;
             txtName.ShortcutsEnabled = true;
-            txtName.Size = new Size(429, 48);
+            txtName.Size = new Size(563, 48);
             txtName.TabIndex = 3;
             txtName.TabStop = false;
             txtName.TextAlign = HorizontalAlignment.Left;
@@ -344,7 +338,7 @@ namespace SMS
             txtId.SelectionLength = 0;
             txtId.SelectionStart = 0;
             txtId.ShortcutsEnabled = true;
-            txtId.Size = new Size(429, 48);
+            txtId.Size = new Size(563, 48);
             txtId.TabIndex = 2;
             txtId.TabStop = false;
             txtId.TextAlign = HorizontalAlignment.Left;
@@ -404,7 +398,7 @@ namespace SMS
         private MaterialSkin.Controls.MaterialTextBox2      txtId;
         private MaterialSkin.Controls.MaterialTextBox2      txtName;
         private MaterialSkin.Controls.MaterialTextBox2      txtAge;
-        private MaterialSkin.Controls.MaterialTextBox2      txtDepartment;
+        private MaterialSkin.Controls.MaterialComboBox      txtDepartment;
         private MaterialSkin.Controls.MaterialButton        btnAdd;
         private MaterialSkin.Controls.MaterialTextBox2      txtSearch;
         private MaterialSkin.Controls.MaterialButton        btnSearch;

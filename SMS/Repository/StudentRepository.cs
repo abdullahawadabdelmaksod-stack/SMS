@@ -27,8 +27,10 @@ namespace SMS.Repository
             if (existing != null)
             {
                 existing.Name = student.Name;
-                existing.Age = student.Age;
                 existing.Department = student.Department;
+                existing.Phone = student.Phone;
+                existing.BirthDate = student.BirthDate;
+                existing.Level = student.Level;
 
                 _context.SaveChanges();
             }
@@ -50,6 +52,11 @@ namespace SMS.Repository
             return _context.Students
                 .Where(s => s.Name.Contains(name))
                 .ToList();
+        }
+
+        public bool NameExists(string name, int excludeId = 0)
+        {
+            return _context.Students.Any(s => s.Name.ToLower() == name.ToLower() && s.StudentId != excludeId);
         }
     }
 }
