@@ -190,25 +190,25 @@ namespace SMS
             _tabMain.DrawItem += TabMain_DrawItem;
 
             // Students tab — move existing DGV into it
-            var tStudents = new TabPage("  Students  ") { BackColor = dark };
+            var tStudents = new TabPage("  Students · الطلاب  ") { BackColor = dark };
             splitContainerMain.Panel1.Controls.Remove(dataGridView1);
             dataGridView1.Dock = DockStyle.Fill;
             tStudents.Controls.Add(dataGridView1);
 
             // Courses tab
-            var tCourses = new TabPage("  Courses  ") { BackColor = dark };
+            var tCourses = new TabPage("  Courses · المقررات  ") { BackColor = dark };
             _dgvCourses = MakeDgv();
             _dgvCourses.CellClick += DgvCourses_CellClick;
             tCourses.Controls.Add(_dgvCourses);
 
             // Grades tab
-            var tGrades = new TabPage("  Grades  ") { BackColor = dark };
+            var tGrades = new TabPage("  Grades · الدرجات  ") { BackColor = dark };
             _dgvGrades = MakeDgv();
             _dgvGrades.CellClick += DgvGrades_CellClick;
             tGrades.Controls.Add(_dgvGrades);
 
             // Attendance tab
-            var tAtt = new TabPage("  Attendance  ") { BackColor = dark };
+            var tAtt = new TabPage("  Attendance · الحضور  ") { BackColor = dark };
             _dgvAttendances = MakeDgv();
             _dgvAttendances.CellClick += DgvAttendances_CellClick;
             tAtt.Controls.Add(_dgvAttendances);
@@ -362,23 +362,23 @@ namespace SMS
             switch (idx)
             {
                 case 0:
-                    materialLabel1.Text = "Student Details";
-                    materialLabelSubtitle.Text = "Add, edit or remove students";
+                    materialLabel1.Text = "Student Details  ·  بيانات الطالب";
+                    materialLabelSubtitle.Text = "Add, edit or remove students  |  إضافة أو تعديل أو حذف الطلاب";
                     LoadStudents();
                     break;
                 case 1:
-                    materialLabel1.Text = "Course Details";
-                    materialLabelSubtitle.Text = "Add, edit or remove courses";
+                    materialLabel1.Text = "Course Details  ·  تفاصيل المقررات";
+                    materialLabelSubtitle.Text = "Add, edit or remove courses  |  إدارة المقررات الدراسية";
                     LoadCourses();
                     break;
                 case 2:
-                    materialLabel1.Text = "Grade Details";
-                    materialLabelSubtitle.Text = "Record and manage grades";
+                    materialLabel1.Text = "Grade Details  ·  الدرجات";
+                    materialLabelSubtitle.Text = "Record and manage grades  |  تسجيل وإدارة الدرجات";
                     LoadGrades();
                     break;
                 case 3:
-                    materialLabel1.Text = "Attendance Details";
-                    materialLabelSubtitle.Text = "Track daily attendance";
+                    materialLabel1.Text = "Attendance  ·  الحضور والغياب";
+                    materialLabelSubtitle.Text = "Track daily attendance  |  متابعة الحضور اليومي";
                     LoadAttendances();
                     break;
             }

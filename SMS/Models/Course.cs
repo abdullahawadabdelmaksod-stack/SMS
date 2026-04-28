@@ -11,6 +11,10 @@ namespace SMS.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
+        // ── Foreign Key for Professor ─────────────────────────────────────────
+        public int? ProfessorId { get; set; }
+        public Professor? Professor { get; set; }
+
         // ── Navigation: one Course → many Grades, Attendances ────────────────
         public ICollection<Grade> Grades { get; set; } = new List<Grade>();
         public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();

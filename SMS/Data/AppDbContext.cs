@@ -9,6 +9,7 @@ namespace SMS.Data
         public DbSet<Student> Students { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Course> Courses { get; set; }
+        public DbSet<Professor> Professors { get; set; }
         public DbSet<Grade> Grades { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
 
@@ -28,10 +29,21 @@ namespace SMS.Data
                 e.ToTable("Students");
                 e.HasKey(s => s.StudentId);
                 e.Property(s => s.Name).IsRequired().HasMaxLength(150);
-                e.Property(s => s.Department).IsRequired().HasMaxLength(5);
-                e.Property(s => s.Age).IsRequired();
+                e.Property(s => s.Department).IsRequired().HasMaxLength(100); // fix: was 5
+                e.Ignore(s => s.Age);   // calculated from BirthDate — not stored
                 e.Property(s => s.Phone).HasMaxLength(20);
                 e.Property(s => s.Level).HasMaxLength(50);
+            });
+
+            // ── User ─────────────────────────────────────────────────────────
+            modelBuilder.Entity<User>(e =>
+            {
+                e.ToTable("Users");
+                e.HasKey(u => u.UserId);
+                e.Property(u => u.Username).IsRequired().HasMaxLength(50);
+                e.HasIndex(u => u.Username).IsUnique(); // Ensure usernames are unique!
+                e.Property(u => u.Password).IsRequired().HasMaxLength(255);
+                e.Property(u => u.Role).IsRequired().HasMaxLength(20);
             });
 
             // ── Course ───────────────────────────────────────────────────────
@@ -39,12 +51,28 @@ namespace SMS.Data
             {
                 e.ToTable("Courses");
                 e.HasKey(c => c.CourseId);
-                e.Property(c => c.CourseId).ValueGeneratedNever();
+                // ValueGeneratedOnAdd (default) — seeder uses auto IDs
                 e.Property(c => c.Name).IsRequired().HasMaxLength(200);
                 e.Property(c => c.Code).IsRequired().HasMaxLength(20);
                 e.Property(c => c.Description).HasMaxLength(500);
                 e.Property(c => c.Credits).IsRequired();
-                e.HasIndex(c => c.Code).IsUnique();   // course codes must be unique
+                e.HasIndex(c => c.Code).IsUnique();
+
+                e.HasOne(c => c.Professor)
+                 .WithMany(p => p.Courses)
+                 .HasForeignKey(c => c.ProfessorId)
+                 .OnDelete(DeleteBehavior.SetNull); // If a professor is deleted, keep the course but set ProfessorId to NULL
+            });
+
+            // ── Professor ────────────────────────────────────────────────────
+            modelBuilder.Entity<Professor>(e =>
+            {
+                e.ToTable("Professors");
+                e.HasKey(p => p.ProfessorId);
+                e.Property(p => p.Name).IsRequired().HasMaxLength(150);
+                e.Property(p => p.Email).HasMaxLength(100);
+                e.Property(p => p.Phone).HasMaxLength(20);
+                e.Property(p => p.Department).HasMaxLength(100);
             });
 
             // ── Grade ────────────────────────────────────────────────────────
@@ -90,8 +118,7 @@ namespace SMS.Data
                  .HasForeignKey(a => a.CourseId)
                  .OnDelete(DeleteBehavior.Restrict);  // prevent accidental course delete
 
-                // Composite index: one record per student per course per day
-                e.HasIndex(a => new { a.StudentId, a.CourseId, a.Date }).IsUnique();
+                // No unique index — multiple records per session day are allowed
             });
 
             // ── Auditable Defaults ───────────────────────────────────────────

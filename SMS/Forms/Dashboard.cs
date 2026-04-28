@@ -34,7 +34,7 @@ namespace SMS
         private Panel _pgDash = new(), _pgStud = new(), _pgCrs = new(),
                       _pgGrd = new(), _pgAtt = new();
         private Panel[] _pages = null!;
-        private string[] _pageTitles = { "Dashboard", "Students", "Courses", "Grades", "Attendance" };
+        private string[] _pageTitles = { "Dashboard · لوحة التحكم", "Students · الطلاب", "Courses · المقررات", "Grades · الدرجات", "Attendance · الحضور" };
 
         // ── Stat value labels (updated by LoadStats) ──────────────────────────
         private Label _valStudents = new(), _valCourses = new(), _valGrades = new(),
@@ -46,6 +46,45 @@ namespace SMS
         // ── DataGridViews ────────────────────────────────────────────────────
         private DataGridView _dgvRecent = new(), _dgvStud = new(), _dgvCrs = new(),
                              _dgvGrd = new(), _dgvAtt = new();
+        // Role‑based UI restrictions
+        private void ApplyRoleRestrictions()
+        {
+            switch (CurrentUser.Role?.ToLowerInvariant())
+            {
+                case "admin":
+                    // admin sees everything – no change
+                    break;
+                case "professor":
+                    // hide Students and Courses pages
+                    _navBtns[1].Visible = false; // Students
+                    _navBtns[2].Visible = false; // Courses
+                    _pages[1].Visible = false;
+                    _pages[2].Visible = false;
+                    break;
+                case "parent":
+                    // hide everything except Grades page
+                    _navBtns[0].Visible = false; // Dashboard
+                    _navBtns[1].Visible = false; // Students
+                    _navBtns[2].Visible = false; // Courses
+                    _navBtns[4].Visible = false; // Attendance
+                    // keep only Grades (index 3)
+                    for (int i = 0; i < _navBtns.Length; i++)
+                    {
+                        if (i != 3) _navBtns[i].Visible = false;
+                    }
+                    for (int i = 0; i < _pages.Length; i++)
+                    {
+                        if (i != 3) _pages[i].Visible = false;
+                    }
+                    // GPA button placeholder
+                    // AddGpaButton();
+                    break;
+                default:
+                    foreach (var b in _navBtns) b.Visible = false;
+                    foreach (var p in _pages) p.Visible = false;
+                    break;
+            }
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         //  Constructor
@@ -67,6 +106,7 @@ namespace SMS
             BuildSidebar();
             BuildContentShell();
             BuildDashboardPage();
+            ApplyRoleRestrictions();
             // Create isolated BindingSources to shield DGV from background thread resets
             var bsStud = new BindingSource(); _dgvStud.DataSource = bsStud;
             var bsCrs = new BindingSource(); _dgvCrs.DataSource = bsCrs;
@@ -114,9 +154,9 @@ namespace SMS
             // ── Sign-out button ───────────────────────────────────────────────
             var btnOut = new MaterialButton
             {
-                Text = "SIGN OUT",
-                Dock = DockStyle.Bottom,
-                Height = 52,
+                Text     = "SIGN OUT  ·  خروج",
+                Dock     = DockStyle.Bottom,
+                Height   = 52,
                 AutoSize = false
             };
             btnOut.Click += (_, _) =>
@@ -145,13 +185,13 @@ namespace SMS
                 Padding = new Padding(0, 12, 0, 0)
             };
 
-            var navDefs = new (string icon, string label)[]
+            var navDefs = new (string icon, string label, string arabic)[]
             {
-                ("⊞", "Dashboard"),
-                ("♟", "Students"),
-                ("☰", "Courses"),
-                ("★", "Grades"),
-                ("◉", "Attendance"),
+                ("⊞", "Dashboard",  "لوحة التحكم"),
+                ("♟", "Students",   "الطلاب"),
+                ("☰", "Courses",    "المقررات"),
+                ("★", "Grades",     "الدرجات"),
+                ("◉", "Attendance", "الحضور"),
             };
 
             _navBtns = new NavButton[navDefs.Length];
@@ -159,7 +199,8 @@ namespace SMS
             {
                 int idx = i;
                 _navBtns[i] = new NavButton
-                { NavIcon = navDefs[i].icon, NavLabel = navDefs[i].label, Width = 240 };
+                { NavIcon = navDefs[i].icon, NavLabel = navDefs[i].label,
+                  NavSubLabel = navDefs[i].arabic, Width = 240 };
                 _navBtns[i].Click += (_, _) => SetPage(idx);
                 flNav.Controls.Add(_navBtns[i]);
             }
@@ -641,72 +682,84 @@ namespace SMS
         private sealed class NavButton : Panel
         {
             private bool _hover;
-            private float _transition = 0f; // 0.0 (normal) to 1.0 (hover)
+            private float _transition = 0f;
             private readonly System.Windows.Forms.Timer _animTimer;
+
             [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             public string NavIcon { get; set; } = "○";
-
             [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             public string NavLabel { get; set; } = "";
-
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public string NavSubLabel { get; set; } = "";   // Arabic line
             [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             public bool IsActive { get; set; }
 
             public NavButton()
             {
                 DoubleBuffered = true;
-                Height = 58;
+                Height = 68;   // taller to fit two lines
                 Cursor = Cursors.Hand;
 
-                _animTimer = new System.Windows.Forms.Timer { Interval = 16 }; // ~60fps
+                _animTimer = new System.Windows.Forms.Timer { Interval = 16 };
                 _animTimer.Tick += (_, _) =>
                 {
                     if (_hover && _transition < 1.0f) { _transition += 0.15f; if (_transition > 1f) _transition = 1f; Invalidate(); }
                     else if (!_hover && _transition > 0.0f) { _transition -= 0.15f; if (_transition < 0f) _transition = 0f; Invalidate(); }
-                    else if (!_hover && _transition <= 0.0f || _hover && _transition >= 1.0f) _animTimer.Stop();
+                    else _animTimer.Stop();
                 };
 
-                MouseEnter += (_, _) => { _hover = true; _animTimer.Start(); };
+                MouseEnter += (_, _) => { _hover = true;  _animTimer.Start(); };
                 MouseLeave += (_, _) => { _hover = false; _animTimer.Start(); };
             }
 
             protected override void OnPaint(PaintEventArgs e)
             {
                 var g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.SmoothingMode     = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                // Background color interpolation
-                Color baseBg = IsActive ? Color.FromArgb(48, 63, 159) : Color.FromArgb(22, 22, 38);
+                // Background
+                Color baseBg  = IsActive ? Color.FromArgb(48, 63, 159) : Color.FromArgb(22, 22, 38);
                 Color hoverBg = Color.FromArgb(38, 42, 68);
-
-                int r = (int)(baseBg.R + (hoverBg.R - baseBg.R) * _transition);
-                int gB = (int)(baseBg.G + (hoverBg.G - baseBg.G) * _transition);
-                int b = (int)(baseBg.B + (hoverBg.B - baseBg.B) * _transition);
-
-                using (var br = new SolidBrush(Color.FromArgb(r, gB, b)))
+                int   rr = (int)(baseBg.R + (hoverBg.R - baseBg.R) * _transition);
+                int   gg = (int)(baseBg.G + (hoverBg.G - baseBg.G) * _transition);
+                int   bb = (int)(baseBg.B + (hoverBg.B - baseBg.B) * _transition);
+                using (var br = new SolidBrush(Color.FromArgb(rr, gg, bb)))
                     g.FillRectangle(br, 0, 0, Width, Height);
 
-                // Active left indicator bar (cyan accent)
+                // Active left bar
                 if (IsActive)
                 {
                     using var bar = new SolidBrush(Color.FromArgb(100, 220, 255));
-                    g.FillRectangle(bar, 0, 12, 4, Height - 24);
+                    g.FillRectangle(bar, 0, 10, 4, Height - 20);
                 }
 
-                var fmt = new StringFormat
+                var iconFmt = new StringFormat
                 { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
                 // Icon
                 using var iconFont = new Font("Segoe UI Symbol", 14F);
-                using var iconBr = new SolidBrush(IsActive ? Color.White : Color.FromArgb(130, 140, 200));
-                g.DrawString(NavIcon, iconFont, iconBr, new RectangleF(12, 0, 36, Height), fmt);
+                using var iconBr   = new SolidBrush(IsActive ? Color.White : Color.FromArgb(130, 140, 200));
+                g.DrawString(NavIcon, iconFont, iconBr, new RectangleF(12, 0, 36, Height), iconFmt);
 
-                // Label
-                using var lblFmt = new StringFormat
-                { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+                // English label (top-left of text area)
                 using var lblFont = new Font("Segoe UI", 11F, IsActive ? FontStyle.Bold : FontStyle.Regular);
-                using var lblBr = new SolidBrush(IsActive ? Color.White : Color.FromArgb(150, 160, 210));
-                g.DrawString(NavLabel, lblFont, lblBr, new RectangleF(55, 0, Width - 60, Height), lblFmt);
+                using var lblBr   = new SolidBrush(IsActive ? Color.White : Color.FromArgb(150, 160, 210));
+                g.DrawString(NavLabel, lblFont, lblBr, new RectangleF(55, 8, Width - 64, 26));
+
+                // Arabic sub-label (bottom-left of text area, smaller)
+                if (!string.IsNullOrEmpty(NavSubLabel))
+                {
+                    using var arFont = new Font("Segoe UI", 9.5F);
+                    using var arBr   = new SolidBrush(IsActive
+                        ? Color.FromArgb(200, 230, 255)
+                        : Color.FromArgb(110, 120, 170));
+                    // Force RTL rendering for Arabic
+                    var arFmt = new StringFormat(StringFormatFlags.DirectionRightToLeft)
+                    { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Near };
+                    g.DrawString(NavSubLabel, arFont, arBr,
+                        new RectangleF(55, 36, Width - 64, 22), arFmt);
+                }
             }
         }
 

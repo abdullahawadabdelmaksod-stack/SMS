@@ -2,33 +2,27 @@ using MaterialSkin;
 using MaterialSkin.Controls;
 using SMS.Data;
 using SMS.Models;
+using System.Linq;
 
 namespace SMS
 {
     public partial class LoginForm : MaterialForm
     {
-        private readonly AppDbContext _context = new();
-
         public LoginForm()
         {
             InitializeComponent();
 
-            // ── MaterialSkin setup ────────────────────────────────────────────────
+            // ── MaterialSkin setup ────────────────────────────────────────────
             var skin = MaterialSkinManager.Instance;
             skin.AddFormToManage(this);
             skin.Theme = MaterialSkinManager.Themes.DARK;
             skin.ColorScheme = new ColorScheme(
-                Primary.Indigo800,
-                Primary.Indigo900,
-                Primary.Indigo500,
-                Accent.Teal200,
-                TextShade.WHITE);
+                Primary.Indigo800, Primary.Indigo900, Primary.Indigo500,
+                Accent.Teal200, TextShade.WHITE);
 
-            // ── Font overrides — set AFTER MaterialSkin so its theme-change ───────
-            // callbacks can't overwrite them.
             ApplyFonts();
 
-            // ── Load logo then apply circular rendering ───────────────────────────
+            // ── Logo ─────────────────────────────────────────────────────────
             try
             {
                 var icoPath = System.IO.Path.Combine(
@@ -48,18 +42,15 @@ namespace SMS
             catch { }
             UIHelper.MakeCircular(picLogo);
 
-            // ── Keep card centred ────────────────────────────────────────────────
+            // ── Centre card ───────────────────────────────────────────────────
             CentreCard();
             Resize += (_, _) => CentreCard();
-
-            // Re-apply fonts after the form is fully shown (last line of defence)
-            Shown += (_, _) => ApplyFonts();
+            Shown  += (_, _) => ApplyFonts();
         }
 
-        /// <summary>Applies heading/subtitle fonts — called after MaterialSkin to prevent overrides.</summary>
         private void ApplyFonts()
         {
-            lblTitle.Font = new System.Drawing.Font("Segoe UI", 17F, System.Drawing.FontStyle.Bold);
+            lblTitle.Font    = new System.Drawing.Font("Segoe UI", 15F, System.Drawing.FontStyle.Bold);
             lblSubtitle.Font = new System.Drawing.Font("Segoe UI", 14F);
             lblSubtitle.Height = 44;
         }
@@ -67,7 +58,7 @@ namespace SMS
         private void CentreCard()
         {
             loginCard.Location = new System.Drawing.Point(
-                (ClientSize.Width - loginCard.Width) / 2,
+                (ClientSize.Width  - loginCard.Width)  / 2,
                 (ClientSize.Height - loginCard.Height) / 2);
         }
 
@@ -76,6 +67,7 @@ namespace SMS
             string username = txtUsername.Text.Trim();
             string password = txtPassword.Text.Trim();
 
+            // ── Empty check ───────────────────────────────────────────────────
             if (username == "" || password == "")
             {
                 MessageBox.Show("Please enter username and password.", "Validation",
@@ -83,15 +75,42 @@ namespace SMS
                 return;
             }
 
+            // ── Format: must contain both letters AND digits ──────────────────
+            if (!username.Any(char.IsLetter) || !username.Any(char.IsDigit))
+            {
+                MessageBox.Show(
+                    "Username must contain both letters and numbers.\n" +
+                    "Example:  ahmed1",
+                    "Invalid Format", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!password.Any(char.IsLetter) || !password.Any(char.IsDigit))
+            {
+                MessageBox.Show(
+                    "Password must contain both letters and numbers.\n" +
+                    "Example:  pass123",
+                    "Invalid Format", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // ── DB lookup ─────────────────────────────────────────────────────
             using var db = new AppDbContext();
-            var user = db.Users
-                .FirstOrDefault(u => u.Username == username && u.Password == password);
+            var norm = username.ToLowerInvariant();
+            var user = db.Users.FirstOrDefault(
+                u => u.Username.ToLower() == norm && u.Password == password);
 
             if (user != null)
             {
-                var dashboard = new Dashboard();
-                dashboard.Show();
-                this.Hide();
+                CurrentUser.UserId   = user.UserId;
+                CurrentUser.Username = user.Username;
+                CurrentUser.Role     = user.Role;
+
+                if (string.Equals(user.Role, "Parent", StringComparison.OrdinalIgnoreCase))
+                    new ParentPortal().Show();
+                else
+                    new Dashboard().Show();
+
+                Hide();
             }
             else
             {
@@ -100,6 +119,9 @@ namespace SMS
             }
         }
 
-
+        private void btnRegister_Click(object sender, EventArgs e)
+        {
+            new RegisterForm().ShowDialog();
+        }
     }
 }

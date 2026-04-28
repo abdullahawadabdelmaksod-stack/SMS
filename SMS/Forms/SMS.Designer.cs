@@ -253,7 +253,7 @@ namespace SMS
             txtDepartment.Size = new Size(563, 49);
             txtDepartment.StartIndex = 0;
             txtDepartment.TabIndex = 5;
-            txtDepartment.Items.AddRange(new object[] { "CS", "AI", "IS", "SE" });
+            txtDepartment.Items.AddRange(new object[] { "AI", "CS", "IS", "SE" });
             // 
             // txtAge
             // 
