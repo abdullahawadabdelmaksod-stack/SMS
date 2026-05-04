@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using SMS.Models;
 using SMS.Repository;
 
@@ -17,12 +17,19 @@ namespace SMS.Services
         {
             if (string.IsNullOrWhiteSpace(s.Name))
                 throw new System.Exception("Name is required");
+            if (_repo.NameExists(s.Name))
+                throw new System.Exception("Student name already exists");
 
             _repo.Add(s);
         }
 
         public void UpdateStudent(Student s)
         {
+            if (string.IsNullOrWhiteSpace(s.Name))
+                throw new System.Exception("Name is required");
+            if (_repo.NameExists(s.Name, s.StudentId))
+                throw new System.Exception("Student name already exists");
+
             _repo.Update(s);
         }
 

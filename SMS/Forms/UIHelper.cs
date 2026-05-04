@@ -24,7 +24,7 @@ namespace SMS
 
             // ── Card surface colour for the dark theme ────────────────────────────
             var skin = MaterialSkinManager.Instance;
-            Color bg  = skin.Theme == MaterialSkinManager.Themes.DARK
+            Color bg = skin.Theme == MaterialSkinManager.Themes.DARK
                 ? Color.FromArgb(45, 45, 54)    // approximate MaterialCard dark surface
                 : Color.FromArgb(250, 250, 250);
 
@@ -32,8 +32,8 @@ namespace SMS
             var circular = new Bitmap(side, side, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(circular))
             {
-                g.SmoothingMode      = SmoothingMode.AntiAlias;
-                g.InterpolationMode  = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 g.CompositingQuality = CompositingQuality.HighQuality;
 
                 // Fill background with the card colour (opaque — no transparency mismatch)
